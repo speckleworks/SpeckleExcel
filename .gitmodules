@@ -1,0 +1,3 @@
+[submodule "SpeckleUiApp"]
+	path = SpeckleUiApp
+	url = https://github.com/speckleworks/SpeckleUiApp

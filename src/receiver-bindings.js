@@ -1,24 +1,9 @@
 const axios = require('axios')
 const flatten = require('flat')
+const convertNumToColumnLetter = require('./excel-helpers').convertNumToColumnLetter
 
 const Office = window.Office
 const Excel = window.Excel
-
-// NOTE, THIS FUNCTION IS 1-BASED INDEXING (i.e., COLUMN A IS 1)
-function convertNumToColumnLetter (num) {
-  if (num === 0) {
-    return ''
-  }
-
-  let currentDigit = Math.floor(num / 27)
-
-  if (currentDigit > 0) {
-    let remainder = num - currentDigit * 26
-    return String.fromCharCode(65 + currentDigit - 1) + convertNumToColumnLetter(remainder)
-  } else {
-    return String.fromCharCode(65 + num - 1)
-  }
-}
 
 function getObjects (baseUrl, objectIds) {
   return new Promise((resolve, reject) => {
@@ -137,6 +122,8 @@ function createExcelSheetStream (client, data) {
 module.exports = {
   addReceiver (args) {
     this.myClients.push(JSON.parse(args))
+    Office.context.document.settings.set('clients', this.myClients)
+    Office.context.document.settings.saveAsync()
   },
   bakeReceiver (args) {
     let client = JSON.parse(args)

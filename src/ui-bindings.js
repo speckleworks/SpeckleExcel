@@ -2,7 +2,7 @@ const url = require('url')
 const senderBindings = require('./sender-bindings')
 const receiverBindings = require('./receiver-bindings')
 
-// const Office = window.Office
+const Office = window.Office
 const Excel = window.Excel
 
 module.exports = Object.assign({},
@@ -21,6 +21,10 @@ module.exports = Object.assign({},
       return 'COMP'
     },
     getFileClients () {
+      this.myClients = Office.context.document.settings.get('clients')
+      if (this.myClients === null || this.myClients === undefined) {
+        this.myClients = []
+      }
       return JSON.stringify(this.myClients)
     },
     removeClient (args) {
@@ -28,6 +32,8 @@ module.exports = Object.assign({},
       let index = this.myClients.findIndex(x => x._id === client._id)
       if (index > -1) {
         this.myClients.splice(index, 1)
+        Office.context.document.settings.set('clients', this.myClients)
+        Office.context.document.settings.saveAsync()
       }
     },
     selectClientObjects (args) {

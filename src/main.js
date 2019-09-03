@@ -1,11 +1,11 @@
-// The Vue build version to load with the `import` command
-// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
-import Vue from 'vue'
-import '../SpeckleUiApp/src/main'
+import bindings from './ui-bindings'
 
-Vue.config.productionTip = false
+window.UiBindings = bindings
 
-const Office = window.Office
-Office.initialize = function () {
-  return window.app
-}
+import('../SpeckleUiApp/src/main')
+.then(() => {
+  const Office = window.Office
+  Office.initialize = function () {
+    return window.app
+  }
+})

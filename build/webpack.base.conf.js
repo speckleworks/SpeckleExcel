@@ -23,7 +23,9 @@ module.exports = {
   context: path.resolve(__dirname, '../'),
   entry: {
     app: [
-      'babel-polyfill',
+      'core-js/modules/es.promise',
+      'core-js/modules/es.array.iterator',
+      '@babel/polyfill',
       './src/main.js'
     ]
   },
@@ -51,7 +53,27 @@ module.exports = {
       },
       {
         test: /\.js$/,
-        loader: 'babel-loader',
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              ["@babel/preset-env", {
+                modules: false,
+                targets: {
+                  browsers: ["> 1%", "last 2 versions", "not ie <= 8"]
+                }
+              }],
+            ],
+            plugins: [
+              "@vue/babel-plugin-transform-vue-jsx",
+              "@babel/plugin-transform-runtime",
+              "@babel/plugin-proposal-object-rest-spread",
+              "@babel/plugin-transform-shorthand-properties",
+              "@babel/plugin-transform-arrow-functions",
+              "@babel/plugin-syntax-dynamic-import",
+            ]
+          }
+        },
         include: [resolve('SpeckleUiApp/src'), resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client')]
       },
       {

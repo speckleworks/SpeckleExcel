@@ -6,10 +6,13 @@
         "browsers": ["> 1%", "last 2 versions", "not ie <= 8"]
       }
     }],
+    "stage-2",
+    "vue"
   ],
   "plugins": [
     "transform-vue-jsx",
     "transform-runtime",
     "transform-object-rest-spread",
+    "transform-es2015-shorthand-properties",
   ]
 }

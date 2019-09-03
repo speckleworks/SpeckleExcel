@@ -7,10 +7,30 @@ const sourceMapEnabled = isProduction
   : config.dev.cssSourceMap
 
 module.exports = {
-  loaders: utils.cssLoaders({
-    sourceMap: sourceMapEnabled,
-    extract: isProduction
-  }),
+  loaders: {
+    // css: utils.cssLoaders({
+    //   sourceMap: sourceMapEnabled,
+    //   extract: isProduction
+    // }),
+    js: [{
+      loader: 'babel-loader',
+      options: {
+        presets: [
+          ["env", {
+            modules: false,
+            targets: {
+              "browsers": ["> 1%", "last 2 versions", "not ie <= 8"]
+            }
+          }],
+          "vue"
+        ],
+        plugins: [
+          "transform-object-rest-spread",
+          "transform-es2015-shorthand-properties",
+        ]
+      }
+    }]
+  },
   cssSourceMap: sourceMapEnabled,
   cacheBusting: config.dev.cacheBusting,
   transformToRequire: {

@@ -68,13 +68,14 @@ module.exports = {
               "@vue/babel-plugin-transform-vue-jsx",
               "@babel/plugin-transform-runtime",
               "@babel/plugin-proposal-object-rest-spread",
+              "@babel/plugin-transform-spread",
               "@babel/plugin-transform-shorthand-properties",
               "@babel/plugin-transform-arrow-functions",
               "@babel/plugin-syntax-dynamic-import",
             ]
           }
         },
-        include: [resolve('SpeckleUiApp/src'), resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client')]
+        include: [resolve('SpeckleUiApp/src'), resolve('src'), resolve('node_modules/webpack-dev-server/client')]
       },
       {
         test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,

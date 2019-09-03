@@ -25,6 +25,7 @@ module.exports = {
         ],
         plugins: [
           "@babel/plugin-proposal-object-rest-spread",
+          "@babel/plugin-transform-spread",
           "@babel/plugin-transform-shorthand-properties",
           "@babel/plugin-transform-arrow-functions",
           "@babel/plugin-syntax-dynamic-import",

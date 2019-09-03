@@ -1,62 +1,72 @@
-module.exports = {
-  myClients: [],
-  addObjectsToSender(args) {
+const url = require('url')
+const senderBindings = require('./sender-bindings')
+const receiverBindings = require('./receiver-bindings')
 
-  },
-  addReceiver(args) {
-    this.myClients.push(JSON.parse(args))
-  },
-  addSender(args) {
+// const Office = window.Office
+const Excel = window.Excel
 
-  },
-  bakeReceiver(args) {
+module.exports = Object.assign({},
+  {
+    myClients: [],
+    getApplicationHostName () {
+      return 'Excel'
+    },
+    getFileName () {
+      return 'MY FILE'
+    },
+    getDocumentId () {
+      return 'TEST'
+    },
+    getDocumentLocation () {
+      return 'COMP'
+    },
+    getFileClients () {
+      return JSON.stringify(this.myClients)
+    },
+    removeClient (args) {
+      let client = JSON.parse(args)
+      let index = this.myClients.findIndex(x => x._id === client._id)
+      if (index > -1) {
+        this.myClients.splice(index, 1)
+      }
+    },
+    selectClientObjects (args) {
+      let client = JSON.parse(args)
 
-  },
-  getApplicationHostName() {
-    return "Excel"
-  },
-  getFileName() {
-    return "MY FILE"
-  },
-  getDocumentId() {
-    return "TEST"
-  },
-  getDocumentLocation() {
-    return "COMP"
-  },
-  getFileClients() {
-    return JSON.stringify(this.myClients)
-  },
-  removeObjectsFromSender(args) {
+      Excel.run(function (context) {
+        let sheets = context.workbook.worksheets
+        sheets.load('items/name')
 
-  },
-  removeClient(args) {
-    let client = JSON.parse(args)
-    let index = this.myClients.findIndex(x => x._id === client._id)
-    if (index > -1)
-    {
-      this.myClients.splice(index, 1)
+        return context.sync()
+          .then(function () {
+            let sheetIndex = sheets.items.findIndex(x => x.name === client.fullName)
+            if (sheetIndex > -1) {
+              sheets.items[sheetIndex].activate()
+            }
+          })
+      })
+    },
+    showDev () {
+      throw new Error('Not implemented')
+    },
+    showAccountsPopup () {
+      let speckleServerUrl = 'https://hestia.speckle.works/api'
+      let browserPath = url.resolve(speckleServerUrl.replace('api', ''), '/signin?redirectUrl=https://localhost:5050')
+
+      window.open(browserPath, '_blank', 'toolbar=no,menubar=no,width=500,height=800')
+    },
+    getAccounts () {
+      return JSON.stringify([
+        {
+          ServerName: 'Speckle Hestia',
+          RestApi: 'https://hestia.speckle.works/api',
+          Email: 'mishael.ebel.nuh@gmail.com',
+          Token: 'XXX',
+          IsDefault: 0
+        }
+      ])
     }
   },
-  addSelectionToSender(args) {
-    
-  },
-  removeSelectionFromSender(args) {
-    
-  },
-  updateSender(args) {
-
-  },
-  selectClientObjects(args) {
-
-  },
-  showDev() {
-    
-  },
-  showAccountsPopup() {
-
-  },
-  getAccounts() {
-
-  },
-}
+  receiverBindings,
+  senderBindings
+)

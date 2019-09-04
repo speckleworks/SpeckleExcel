@@ -93,6 +93,7 @@ function createExcelSheetStream (client, data) {
         return context.sync()
           .then(function () {
             let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
+            objectTable.style = 'TableStyleLight8'
             objectTable.getHeaderRowRange().values = [headers]
 
             objectTable.rows.add(null, arrayedData)

@@ -40,14 +40,14 @@ module.exports = Object.assign({},
       let client = JSON.parse(args)
 
       // TODO: Figure out how to do this elegantly for senders
-      if (client.name === 'receiver') {
+      if (client.type === 'receiver') {
         Excel.run(function (context) {
           let sheets = context.workbook.worksheets
           sheets.load('items/name')
 
           return context.sync()
             .then(function () {
-              let sheetIndex = sheets.items.findIndex(x => x.name === client.fullName)
+              let sheetIndex = sheets.items.findIndex(x => x.name === client.streamId)
               if (sheetIndex > -1) {
                 sheets.items[sheetIndex].activate()
               }

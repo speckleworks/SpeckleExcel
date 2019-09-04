@@ -148,7 +148,7 @@ module.exports = {
                   let header = vals[0][i]
                   let v = vals[o.row][i]
 
-                  if (v === '' || header === '' || header === '_id') {
+                  if (v === '' || header === '' || header === '_id' || header === 'hash') {
                     continue
                   }
 

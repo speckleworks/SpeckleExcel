@@ -36,7 +36,9 @@ function createExcelSheetStream (client, data) {
     }))
     counter++
   })
-  headers = headers.filter(function (item, i, ar) { return ar.indexOf(item) === i }).filter(h => h !== 'hash')
+  headers = headers
+    .filter(function (item, i, ar) { return ar.indexOf(item) === i })
+    .filter(h => !['private', 'canRead', 'canWrite', 'anonymousComments', 'comments', 'deleted', 'owner', '__v', 'createdAt', 'updatedAt'].includes(h))
 
   let arrayedData = []
   counter = 1

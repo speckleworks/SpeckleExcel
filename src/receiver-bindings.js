@@ -44,7 +44,12 @@ function createExcelSheetStream (client, data) {
     let newObj = []
     headers.forEach(h => {
       if (o.hasOwnProperty(h)) {
-        newObj.push(JSON.stringify(o[h]))
+        let val = JSON.stringify(o[h])
+        try {
+          newObj.push(val.replace(/"/g, ''))
+        } catch (ex) {
+          newObj.push(val)
+        }
       } else {
         newObj.push('')
       }
@@ -127,6 +132,11 @@ module.exports = {
   },
   bakeReceiver (args) {
     let client = JSON.parse(args)
+    let index = this.myClients.findIndex(x => x._id === client._id)
+
+    if (index < 0) {
+      return
+    }
 
     window.EventBus.$emit('update-client', JSON.stringify({
       _id: client._id,
@@ -153,7 +163,12 @@ module.exports = {
               loadingBlurb: 'Preparing to write sheet...',
               objects: res
             }))
+
             createExcelSheetStream(client, res)
+
+            this.myClients[index].objects = ids
+            Office.context.document.settings.set('clients', this.myClients)
+            Office.context.document.settings.saveAsync()
           })
           .catch(err => {
             console.log(err)

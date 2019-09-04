@@ -1,3 +1,6 @@
+const axios = require('axios')
+const unflatten = require('flat').unflatten
+
 const Office = window.Office
 const Excel = window.Excel
 
@@ -10,58 +13,23 @@ module.exports = {
   getObjectSelection () {
     return Excel.run(function (context) {
       const range = context.workbook.getSelectedRange()
-      range.load(['rowIndex', 'rowCount', 'columnIndex', 'columnCount', 'worksheet/name'])
+      range.load(['rowIndex', 'rowCount', 'worksheet/name'])
 
       return context.sync()
         .then(function () {
-          // Get headers
-          let headerRange = range.worksheet.getRangeByIndexes(0, range.columnIndex, 1, range.columnCount)
-          headerRange.load('values')
+          let objects = []
+          for (let i = range.rowIndex; i < range.rowIndex + range.rowCount; i++) {
+            if (i === 0) {
+              continue
+            }
 
-          return context.sync()
-            .then(function () {
-              let headerValues = headerRange.values[0]
-
-              let rIndex = range.rowIndex
-              let rCount = range.rowCount
-              if (rIndex === 0) {
-                rIndex = 1
-                rCount--
-              }
-
-              let selectionRange = range.worksheet.getRangeByIndexes(rIndex, range.columnIndex, rCount, range.columnCount)
-              selectionRange.load('values')
-
-              return context.sync()
-                .then(function () {
-                  let selectionValues = selectionRange.values
-
-                  let allObjects = []
-
-                  for (let i = 0; i < selectionValues.length; i++) {
-                    let obj = {}
-
-                    for (let j = 0; j < selectionValues[i].length; j++) {
-                      let v = selectionValues[i][j]
-                      if (v === '' || headerValues[j] === '') {
-                        continue
-                      }
-                      obj[headerValues[j]] = v
-                    }
-
-                    if (Object.keys(obj).length === 0) {
-                      continue
-                    }
-
-                    if (!headerValues.includes('applicationId')) {
-                      obj.applicationId = 'excel/' + range.worksheet.name + '!' + (parseInt(rIndex) + i).toString()
-                    }
-
-                    allObjects.push(obj)
-                  }
-                  return context.sync(allObjects)
-                })
+            objects.push({
+              sheet: range.worksheet.name,
+              row: i
             })
+          }
+
+          return context.sync(objects)
         })
     })
   },
@@ -76,13 +44,16 @@ module.exports = {
     this.getObjectSelection()
       .then(res => {
         let objects = this.myClients[index].objects
-          .filter(x => !res.map(o => o.applicationId).includes(x.applicationId))
 
         if (objects === undefined) {
           objects = []
         }
 
         res.forEach(o => {
+          objects = objects.filter(x => !(x.sheet === o.sheet && x.row === o.row))
+          if (objects === undefined) {
+            objects = []
+          }
           objects.push(o)
         })
 
@@ -92,6 +63,9 @@ module.exports = {
           _id: client._id,
           objects: objects
         }))
+
+        Office.context.document.settings.set('clients', this.myClients)
+        Office.context.document.settings.saveAsync()
       })
   },
   removeSelectionFromSender (args) {
@@ -105,11 +79,14 @@ module.exports = {
     this.getObjectSelection()
       .then(res => {
         let objects = this.myClients[index].objects
-          .filter(x => !res.map(o => o.applicationId).includes(x.applicationId))
 
         if (objects === undefined) {
           objects = []
         }
+
+        res.forEach(o => {
+          objects = objects.filter(x => !(x.sheet === o.sheet && x.row === o.row))
+        })
 
         this.myClients[index].objects = objects
 
@@ -120,6 +97,126 @@ module.exports = {
       })
   },
   updateSender (args) {
-    throw new Error(args)
+    let client = JSON.parse(args)
+    let index = this.myClients.findIndex(x => x._id === client._id)
+
+    if (index < 0) {
+      return
+    }
+
+    window.EventBus.$emit('update-client', JSON.stringify({
+      _id: client._id,
+      loading: true,
+      loadingBlurb: 'Converting objects...'
+    }))
+
+    let objects = this.myClients[index].objects
+
+    if (objects === undefined) {
+      objects = []
+    }
+
+    Excel.run(function (context) {
+      let sheets = context.workbook.worksheets
+      sheets.load('items/name')
+
+      return context.sync()
+        .then(function () {
+          let worksheetRanges = {}
+          let goodObjects = []
+          objects.forEach(o => {
+            if (!worksheetRanges.hasOwnProperty(o.sheet)) {
+              let sheetIndex = sheets.items.findIndex(x => x.name === o.sheet)
+              if (sheetIndex > -1) {
+                worksheetRanges[o.sheet] = sheets.items[sheetIndex].getUsedRange(true)
+                worksheetRanges[o.sheet].load('values')
+                goodObjects.push(o)
+              }
+            } else {
+              goodObjects.push(o)
+            }
+          })
+
+          return context.sync()
+            .then(function () {
+              let convertedObjects = []
+
+              goodObjects.forEach(o => {
+                let convObj = {}
+                let vals = worksheetRanges[o.sheet].values
+                for (let i = 0; i < vals[o.row].length; i++) {
+                  let header = vals[0][i]
+                  let v = vals[o.row][i]
+
+                  if (v === '' || header === '' || header === '_id') {
+                    continue
+                  }
+
+                  try {
+                    convObj[header] = JSON.parse(v)
+                  } catch (ex) {
+                    convObj[header] = v
+                  }
+                }
+
+                if (Object.keys(convObj).length > 0) {
+                  if (!Object.keys(convObj).includes('applicationId')) {
+                    convObj.applicationId = 'excel/' + o.sheet + '!' + (o.row).toString()
+                  }
+
+                  convertedObjects.push(unflatten(convObj, {safe: true}))
+                }
+              })
+
+              return context.sync(convertedObjects)
+            })
+        })
+    })
+      .then(res => {
+        window.EventBus.$emit('update-client', JSON.stringify({
+          _id: client._id,
+          loading: true,
+          loadingBlurb: 'Sending to stream...'
+        }))
+
+        axios.defaults.headers.common[ 'Authorization' ] = client.account.Token
+
+        let promises = []
+        // TODO: Do orchestration here
+        promises.push(
+          axios({
+            method: 'POST',
+            baseURL: client.account.RestApi,
+            url: `objects`,
+            data: res
+          })
+            .then(axRes => { return axRes.data.resources })
+        )
+
+        Promise.all(promises)
+          .then(res => {
+            let placeholders = []
+
+            res.forEach(r => {
+              r.forEach(p => {
+                placeholders.push(p)
+              })
+            })
+
+            axios({
+              method: 'PUT',
+              baseURL: client.account.RestApi,
+              url: `streams/${client.streamId}`,
+              data: {name: client.name, objects: placeholders}
+            })
+              .then(() => {
+                window.EventBus.$emit('update-client', JSON.stringify({
+                  _id: client._id,
+                  loading: false,
+                  loadingBlurb: 'Done.'
+                }))
+              })
+          })
+      })
   }
 }

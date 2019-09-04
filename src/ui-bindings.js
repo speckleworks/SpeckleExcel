@@ -39,18 +39,21 @@ module.exports = Object.assign({},
     selectClientObjects (args) {
       let client = JSON.parse(args)
 
-      Excel.run(function (context) {
-        let sheets = context.workbook.worksheets
-        sheets.load('items/name')
+      // TODO: Figure out how to do this elegantly for senders
+      if (client.name === 'receiver') {
+        Excel.run(function (context) {
+          let sheets = context.workbook.worksheets
+          sheets.load('items/name')
 
-        return context.sync()
-          .then(function () {
-            let sheetIndex = sheets.items.findIndex(x => x.name === client.fullName)
-            if (sheetIndex > -1) {
-              sheets.items[sheetIndex].activate()
-            }
-          })
-      })
+          return context.sync()
+            .then(function () {
+              let sheetIndex = sheets.items.findIndex(x => x.name === client.fullName)
+              if (sheetIndex > -1) {
+                sheets.items[sheetIndex].activate()
+              }
+            })
+        })
+      }
     },
     showDev () {
       throw new Error('Not implemented')

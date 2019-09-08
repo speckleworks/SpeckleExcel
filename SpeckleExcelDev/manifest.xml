@@ -9,19 +9,19 @@
   <!-- Begin Basic Settings: Add-in metadata, used for all versions of Office unless override provided. -->
 
   <!-- IMPORTANT! Id must be unique for your add-in, if you reuse this manifest ensure that you change this id to a new GUID. -->
-  <Id>517b029b-a3f5-46ce-bc90-32d398abea30</Id>
+  <Id>61886ee0-89ca-4c8a-9941-623ff642d528</Id>
 
   <!--Version. Updates from the store only get triggered if there is a version change. -->
   <Version>1.0.0.0</Version>
   <ProviderName>Speckle</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <!-- The display name of your add-in. Used on the store and various places of the Office UI such as the add-ins dialog. -->
-  <DisplayName DefaultValue="SpeckleExcel" />
+  <DisplayName DefaultValue="SpeckleExcel - DEV" />
   <Description DefaultValue="Speckle client for Excel"/>
 
   <!-- Icon for your add-in. Used on installation screens and the add-ins dialog. -->
-  <IconUrl DefaultValue="https://speckleexcel.netlify.com/static/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://speckleexcel.netlify.com/static/icon-80.png"/>
+  <IconUrl DefaultValue="https://localhost:8080/static/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:8080/static/icon-80.png"/>
 
   <!--If you plan to submit this add-in to the Office Store, uncomment the SupportUrl element below-->
   <SupportUrl DefaultValue="https://speckle.works" />
@@ -36,7 +36,7 @@
     <Host Name="Workbook" />
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://speckleexcel.netlify.com/" />
+    <SourceLocation DefaultValue="https://localhost:8080/" />
   </DefaultSettings>
   <!-- End TaskPane Mode integration.  -->
 
@@ -127,26 +127,26 @@
     <!-- You can use resources across hosts and form factors. -->
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://speckleexcel.netlify.com/static/icon-16.png"/>
-        <bt:Image id="Icon.20x20" DefaultValue="https://speckleexcel.netlify.com/static/icon-20.png"/>
-        <bt:Image id="Icon.24x24" DefaultValue="https://speckleexcel.netlify.com/static/icon-24.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://speckleexcel.netlify.com/static/icon-32.png"/>
-        <bt:Image id="Icon.40x40" DefaultValue="https://speckleexcel.netlify.com/static/icon-40.png"/>
-        <bt:Image id="Icon.48x48" DefaultValue="https://speckleexcel.netlify.com/static/icon-48.png"/>
-        <bt:Image id="Icon.64x64" DefaultValue="https://speckleexcel.netlify.com/static/icon-64.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://speckleexcel.netlify.com/static/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:8080/static/icon-16.png"/>
+        <bt:Image id="Icon.20x20" DefaultValue="https://localhost:8080/static/icon-20.png"/>
+        <bt:Image id="Icon.24x24" DefaultValue="https://localhost:8080/static/icon-24.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:8080/static/icon-32.png"/>
+        <bt:Image id="Icon.40x40" DefaultValue="https://localhost:8080/static/icon-40.png"/>
+        <bt:Image id="Icon.48x48" DefaultValue="https://localhost:8080/static/icon-48.png"/>
+        <bt:Image id="Icon.64x64" DefaultValue="https://localhost:8080/static/icon-64.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:8080/static/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://speckle.systems" />
-        <bt:Url id="Commands.Url" DefaultValue="https://speckleexcel.netlify.com/commands.html" />
-        <bt:Url id="Taskpane.Url" DefaultValue="https://speckleexcel.netlify.com/" />
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:8080/commands.html" />
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:8080/" />
       </bt:Urls>
       <!-- ShortStrings max characters==125. -->
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with your sample add-in!" />
         <bt:String id="Speckle.Tab1.Group1.Label" DefaultValue="Connector" />
         <bt:String id="SpeckleExcelButton.Label" DefaultValue="SpeckleExcel" />
-        <bt:String id="Speckle.Tab1.TabLabel" DefaultValue="Speckle" />
+        <bt:String id="Speckle.Tab1.TabLabel" DefaultValue="Speckle - DEV" />
       </bt:ShortStrings>
       <!-- LongStrings max characters==250. -->
       <bt:LongStrings>

@@ -9,7 +9,7 @@
     "start": "npm run dev",
     "lint": "eslint --ext .js,.vue src",
     "build": "node build/build.js",
-    "postinstall": "cd ./SpeckleUiApp && npm install && cd ../SpeckleExcel && npm install && cd .."
+    "postinstall": "cd ./SpeckleUiApp && npm install && cd ../SpeckleExcel && npm install && cd ../SpeckleExcelDev && npm install && cd .."
   },
   "dependencies": {
     "@babel/polyfill": "^7.4.4",

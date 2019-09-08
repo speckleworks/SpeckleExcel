@@ -4,7 +4,7 @@
 
 Speckle client for Microsoft Excel
 
-![SpeckleExcel](https://raw.githubusercontent.com/speckleworks/SpeckleExcel/master/SpeckleExcel/images/speckleexcel.png)
+![SpeckleExcel](https://github.com/speckleworks/SpeckleExcel/raw/master/images/speckleexcel.png)
 
 ## Installation
 SpeckleExcel will be added to the Office store soon. For now, you can sideload the plugin using the following steps:
@@ -18,6 +18,7 @@ SpeckleExcel will be added to the Office store soon. For now, you can sideload t
 SpeckleExcel contains two Office add-ins to sideload, one for release and one for development:
 - SpeckleExcel: uses `https://speckleexcel.netlify.com` as the plugin source
 - SpeckleExcelDev: uses `https://localhost:8080` as the plugin source
+  - Make sure to add the certificate from `https://localhost:8080` before loading the plugin
 
 ### Server requirements
 - SpeckleExcel requires updated Speckle servers (minimum [commit](https://github.com/speckleworks/SpeckleServer/commit/9e135c453a93608a7e75d0317407070a64bdcea7) supported)

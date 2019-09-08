@@ -79,43 +79,43 @@ function createExcelSheetStream (client, data) {
     let sheets = context.workbook.worksheets
     sheets.load('items/name')
 
-    return context.sync()
-      .then(function () {
-        let sheet = null
-        let sheetName = client.streamId.substring(0, 30)
-        if (sheets.items.findIndex(x => x.name === sheetName) < 0) {
-          sheet = context.workbook.worksheets.add(sheetName)
-        } else {
-          let sheetIndex = sheets.items.findIndex(x => x.name === sheetName)
-          sheet = sheets.items[sheetIndex]
-          sheet.getRange().clear()
-        }
-        return context.sync()
-          .then(function () {
-            let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
-            objectTable.style = 'TableStyleLight8'
-            objectTable.getHeaderRowRange().values = [headers]
-
-            objectTable.rows.add(null, arrayedData)
-
-            if (Office.context.requirements.isSetSupported('ExcelApi', '1.2')) {
-              sheet.getUsedRange().format.autofitColumns()
-              sheet.getUsedRange().format.autofitRows()
-            }
-
-            sheet.activate()
-            return context.sync()
-              .then(function () {
-                window.EventBus.$emit('update-client', JSON.stringify({
-                  _id: client._id,
-                  loading: false,
-                  isLoadingIndeterminate: true,
-                  loadingBlurb: `Done.`
-                }))
-              })
-          })
-      })
+    return context.sync({context: context, sheets: sheets})
   })
+    .then(function ({context, sheets}) {
+      let sheet = null
+      let sheetName = client.streamId.substring(0, 30)
+      if (sheets.items.findIndex(x => x.name === sheetName) < 0) {
+        sheet = context.workbook.worksheets.add(sheetName)
+      } else {
+        let sheetIndex = sheets.items.findIndex(x => x.name === sheetName)
+        sheet = sheets.items[sheetIndex]
+        sheet.getRange().clear()
+      }
+      return context.sync({context: context, sheet: sheet})
+    })
+    .then(function ({context, sheet}) {
+      let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
+      objectTable.style = 'TableStyleLight8'
+      objectTable.getHeaderRowRange().values = [headers]
+
+      objectTable.rows.add(null, arrayedData)
+
+      if (Office.context.requirements.isSetSupported('ExcelApi', '1.2')) {
+        sheet.getUsedRange().format.autofitColumns()
+        sheet.getUsedRange().format.autofitRows()
+      }
+
+      sheet.activate()
+      return context.sync()
+    })
+    .then(function () {
+      window.EventBus.$emit('update-client', JSON.stringify({
+        _id: client._id,
+        loading: false,
+        isLoadingIndeterminate: true,
+        loadingBlurb: `Done.`
+      }))
+    })
     .catch(err => {
       window.EventBus.$emit('update-client', JSON.stringify({
         _id: client._id,
@@ -158,7 +158,7 @@ module.exports = {
         // TODO: Orchestrate this
         let ids = res.data.resource.objects.map(o => o._id)
 
-        getObjects(client.account.RestApi, ids)
+        return getObjects(client.account.RestApi, ids)
           .then(res => {
             window.EventBus.$emit('update-client', JSON.stringify({
               _id: client._id,

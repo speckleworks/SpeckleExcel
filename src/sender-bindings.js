@@ -4,6 +4,65 @@ const unflatten = require('flat').unflatten
 const Office = window.Office
 const Excel = window.Excel
 
+function getObjects (objects) {
+  return Excel.run(function (context) {
+    let sheets = context.workbook.worksheets
+    sheets.load('items/name')
+
+    return context.sync({context: context, sheets: sheets})
+  })
+    .then(function ({context, sheets}) {
+      let worksheetRanges = {}
+      let goodObjects = []
+      objects.forEach(o => {
+        if (!worksheetRanges.hasOwnProperty(o.sheet)) {
+          let sheetIndex = sheets.items.findIndex(x => x.name === o.sheet)
+          if (sheetIndex > -1) {
+            worksheetRanges[o.sheet] = sheets.items[sheetIndex].getUsedRange(true)
+            worksheetRanges[o.sheet].load('values')
+            goodObjects.push(o)
+          }
+        } else {
+          goodObjects.push(o)
+        }
+      })
+
+      return context.sync({context: context, worksheetRanges: worksheetRanges, goodObjects: goodObjects})
+    })
+    .then(function ({context, worksheetRanges, goodObjects}) {
+      let convertedObjects = []
+
+      goodObjects.forEach(o => {
+        let convObj = {}
+        let vals = worksheetRanges[o.sheet].values
+        for (let i = 0; i < vals[o.row].length; i++) {
+          let header = vals[0][i]
+          let v = vals[o.row][i]
+
+          if (v === '' || header === '' || header === '_id' || header === 'hash') {
+            continue
+          }
+
+          try {
+            convObj[header] = JSON.parse(v)
+          } catch (ex) {
+            convObj[header] = v
+          }
+        }
+
+        if (Object.keys(convObj).length > 0) {
+          if (!Object.keys(convObj).includes('applicationId')) {
+            convObj.applicationId = 'excel/' + o.sheet + '!' + (o.row).toString()
+          }
+
+          convertedObjects.push(unflatten(convObj, {safe: true}))
+        }
+      })
+
+      return context.sync(convertedObjects)
+    })
+}
+
 module.exports = {
   addSender (args) {
     this.myClients.push(JSON.parse(args))
@@ -15,23 +74,23 @@ module.exports = {
       const range = context.workbook.getSelectedRange()
       range.load(['rowIndex', 'rowCount', 'worksheet/name'])
 
-      return context.sync()
-        .then(function () {
-          let objects = []
-          for (let i = range.rowIndex; i < range.rowIndex + range.rowCount; i++) {
-            if (i === 0) {
-              continue
-            }
-
-            objects.push({
-              sheet: range.worksheet.name,
-              row: i
-            })
+      return context.sync(range)
+    })
+      .then(function (range) {
+        let objects = []
+        for (let i = range.rowIndex; i < range.rowIndex + range.rowCount; i++) {
+          if (i === 0) {
+            continue
           }
 
-          return context.sync(objects)
-        })
-    })
+          objects.push({
+            sheet: range.worksheet.name,
+            row: i
+          })
+        }
+
+        return range.context.sync(objects)
+      })
   },
   addSelectionToSender (args) {
     let client = JSON.parse(args)
@@ -116,62 +175,7 @@ module.exports = {
       objects = []
     }
 
-    Excel.run(function (context) {
-      let sheets = context.workbook.worksheets
-      sheets.load('items/name')
-
-      return context.sync()
-        .then(function () {
-          let worksheetRanges = {}
-          let goodObjects = []
-          objects.forEach(o => {
-            if (!worksheetRanges.hasOwnProperty(o.sheet)) {
-              let sheetIndex = sheets.items.findIndex(x => x.name === o.sheet)
-              if (sheetIndex > -1) {
-                worksheetRanges[o.sheet] = sheets.items[sheetIndex].getUsedRange(true)
-                worksheetRanges[o.sheet].load('values')
-                goodObjects.push(o)
-              }
-            } else {
-              goodObjects.push(o)
-            }
-          })
-
-          return context.sync()
-            .then(function () {
-              let convertedObjects = []
-
-              goodObjects.forEach(o => {
-                let convObj = {}
-                let vals = worksheetRanges[o.sheet].values
-                for (let i = 0; i < vals[o.row].length; i++) {
-                  let header = vals[0][i]
-                  let v = vals[o.row][i]
-
-                  if (v === '' || header === '' || header === '_id' || header === 'hash') {
-                    continue
-                  }
-
-                  try {
-                    convObj[header] = JSON.parse(v)
-                  } catch (ex) {
-                    convObj[header] = v
-                  }
-                }
-
-                if (Object.keys(convObj).length > 0) {
-                  if (!Object.keys(convObj).includes('applicationId')) {
-                    convObj.applicationId = 'excel/' + o.sheet + '!' + (o.row).toString()
-                  }
-
-                  convertedObjects.push(unflatten(convObj, {safe: true}))
-                }
-              })
-
-              return context.sync(convertedObjects)
-            })
-        })
-    })
+    getObjects(objects)
       .then(res => {
         window.EventBus.$emit('update-client', JSON.stringify({
           _id: client._id,
@@ -193,30 +197,30 @@ module.exports = {
             .then(axRes => { return axRes.data.resources })
         )
 
-        Promise.all(promises)
-          .then(res => {
-            let placeholders = []
+        return Promise.all(promises)
+      })
+      .then(res => {
+        let placeholders = []
 
-            res.forEach(r => {
-              r.forEach(p => {
-                placeholders.push(p)
-              })
-            })
-
-            axios({
-              method: 'PUT',
-              baseURL: client.account.RestApi,
-              url: `streams/${client.streamId}`,
-              data: {name: client.name, objects: placeholders}
-            })
-              .then(() => {
-                window.EventBus.$emit('update-client', JSON.stringify({
-                  _id: client._id,
-                  loading: false,
-                  loadingBlurb: 'Done.'
-                }))
-              })
+        res.forEach(r => {
+          r.forEach(p => {
+            placeholders.push(p)
           })
+        })
+
+        return axios({
+          method: 'PUT',
+          baseURL: client.account.RestApi,
+          url: `streams/${client.streamId}`,
+          data: {name: client.name, objects: placeholders}
+        })
+      })
+      .then(() => {
+        window.EventBus.$emit('update-client', JSON.stringify({
+          _id: client._id,
+          loading: false,
+          loadingBlurb: 'Done.'
+        }))
       })
   }
 }

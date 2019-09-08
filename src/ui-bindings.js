@@ -1,6 +1,6 @@
-const url = require('url')
 const senderBindings = require('./sender-bindings')
 const receiverBindings = require('./receiver-bindings')
+const accountsBindings = require('./accounts-bindings')
 
 const Office = window.Office
 const Excel = window.Excel
@@ -57,25 +57,9 @@ module.exports = Object.assign({},
     },
     showDev () {
       throw new Error('Not implemented')
-    },
-    showAccountsPopup () {
-      let speckleServerUrl = 'https://hestia.speckle.works/api'
-      let browserPath = url.resolve(speckleServerUrl.replace('api', ''), '/signin?redirectUrl=https://localhost:5050')
-
-      window.open(browserPath, '_blank', 'toolbar=no,menubar=no,width=500,height=800')
-    },
-    getAccounts () {
-      return JSON.stringify([
-        {
-          ServerName: 'Speckle Hestia',
-          RestApi: 'https://hestia.speckle.works/api',
-          Email: 'mishael.ebel.nuh@gmail.com',
-          Token: 'XXX',
-          IsDefault: 0
-        }
-      ])
     }
   },
   receiverBindings,
-  senderBindings
+  senderBindings,
+  accountsBindings
 )

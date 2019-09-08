@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Account Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  </head>
+  <body style="margin: 0; height: 100%; display: flex; flex-direction: column;" class=''>
+    <div id="serverChooserContainer" class="shadow-lg m-5 card p-4">
+      <label>Server:</label>
+      <input id="serverAddress" type="text" class="form-control" placeholder="Enter your server" value="https://hestia.speckle.works"/>
+      <br/>
+      <button id="goButton" type="submit" class="btn btn-primary btn-sm btn-block" style="display: none;">Go</button>
+    </div>
+    <iframe
+      id="loginPage"
+      style="display: flex; width: 100%; flex-grow: 1; border: none; margin: 0; padding: 0; overflow: hidden;">
+      Your browser doesn't support iframes
+    </iframe>
+  </body>
+  <script>
+    let goButton = document.getElementById('goButton')
+    let input = document.getElementById('serverAddress')
+
+    const debounce = function (foo, delay) { 
+      let t
+      return function () {
+        clearTimeout(t)
+        t = setTimeout(function () { foo.apply(this, arguments) }, delay) 
+      } 
+    }
+
+    var checkServer = debounce(function () {
+      let serverAddress = input.value
+
+      var request = new XMLHttpRequest()
+
+      request.onload = function(e) {
+        try {
+          if (JSON.parse(request.response).isSpeckleServer) {
+            input.style.borderColor = '#4CAF50'
+            goButton.style.display = 'block'
+          }
+        } catch (ex) {
+          input.style.borderColor = '#FF5252'
+        }
+      }
+
+      request.onerror = function(e) {
+        input.style.borderColor = '#FF5252'
+      }
+
+      request.open('GET', serverAddress + '/api')
+      request.send()
+    }, 500)
+
+    goButton.addEventListener('click', function () {
+      let myframe = document.getElementById('loginPage')
+
+      if(myframe !== null) {
+        myframe.src = input.value + '/signin?redirectUrl=' + window.location.origin
+        document.getElementById('serverChooserContainer').style.display = 'none'
+      }
+    })
+    
+    input.addEventListener('change', function () {
+      input.style.borderColor = '#FB8C00'
+      goButton.style.display = 'none'
+      checkServer()
+    })
+
+    checkServer()
+
+    Office.initialize = function() {
+      var eventMethod = window.addEventListener
+			  ? "addEventListener"
+        : "attachEvent";
+      var eventer = window[eventMethod];
+      var messageEvent = eventMethod === "attachEvent"
+        ? "onmessage"
+        : "message";
+      
+      eventer(messageEvent, function (e) {
+        Office.context.ui.messageParent(e.data ? e.data : e.message)
+      })
+    }
+  </script>
+</html>

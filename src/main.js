@@ -1,8 +1,7 @@
 import bindings from './ui-bindings'
 
 function handleSelectionChange () {
-  const Excel = window.Excel
-  return Excel.run(function (context) {
+  return window.Excel.run(function (context) {
     return context.sync(context)
   })
     .then(function (context) {
@@ -26,13 +25,13 @@ import('../SpeckleUiApp/src/main')
     const Office = window.Office
     Office.initialize = function () {
       handleSelectionChange()
+
+      window.Excel.run(function (context) {
+        context.workbook.onSelectionChanged.add(handleSelectionChange)
+
+        return context.sync()
+      })
+
       return window.app
     }
-
-    const Excel = window.Excel
-    Excel.run(function (context) {
-      context.workbook.onSelectionChanged.add(handleSelectionChange)
-
-      return context.sync()
-    })
   })

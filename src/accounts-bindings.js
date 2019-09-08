@@ -1,8 +1,6 @@
 const url = require('url')
 const axios = require('axios')
 
-const Office = window.Office
-
 var dialog
 
 function processLoginToken (arg) {
@@ -34,19 +32,30 @@ function processLoginToken (arg) {
         RestApi: url.resolve(serverUrl, '/api'),
         Email: res.data.resource.email,
         Token: res.data.resource.apitoken,
+        AccountId: res.data.resource._id,
         IsDefault: false
       }
 
-      let accounts = Office.context.document.settings.get('accounts')
+      let accounts = window.Office.context.document.settings.get('accounts')
       if (accounts === null || accounts === undefined) {
         accounts = []
+      }
+
+      let accIndex = accounts.findIndex(x => x.AccountId === account.AccountId)
+      if (accIndex > -1) {
+        accounts.splice(accIndex, 1)
+      }
+
+      if (accounts.length === 0) {
         account.IsDefault = true
       }
-      accounts.push(account)
-      Office.context.document.settings.set('accounts', accounts)
-      Office.context.document.settings.saveAsync()
 
-      window.location.reload()
+      accounts.push(account)
+
+      window.Office.context.document.settings.set('accounts', accounts)
+      window.Office.context.document.settings.saveAsync()
+
+      window.Store.dispatch('getAccounts')
     })
 
   dialog.close()
@@ -56,14 +65,14 @@ module.exports = {
   showAccountsPopup () {
     let browserPath = url.resolve(window.location.origin, `login.html`)
 
-    Office.context.ui.displayDialogAsync(browserPath, {height: 80, width: 30, displayInIframe: true},
+    window.Office.context.ui.displayDialogAsync(browserPath, {height: 50, width: 30, displayInIframe: true},
       asyncResult => {
         dialog = asyncResult.value
-        dialog.addEventHandler(Office.EventType.DialogMessageReceived, processLoginToken)
+        dialog.addEventHandler(window.Office.EventType.DialogMessageReceived, processLoginToken)
       })
   },
   getAccounts () {
-    let accounts = Office.context.document.settings.get('accounts')
+    let accounts = window.Office.context.document.settings.get('accounts')
     if (accounts === null || accounts === undefined) {
       accounts = []
     }

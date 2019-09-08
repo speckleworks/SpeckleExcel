@@ -1,11 +1,21 @@
 const axios = require('axios')
 const unflatten = require('flat').unflatten
 
-const Office = window.Office
-const Excel = window.Excel
+function sendObjects (baseUrl, objects) {
+  return new Promise((resolve, reject) => {
+    axios({
+      method: 'POST',
+      baseURL: baseUrl,
+      url: 'objects',
+      data: objects
+    })
+      .then(res => resolve(res.data.resources))
+      .catch(err => reject(err))
+  })
+}
 
 function getObjects (objects) {
-  return Excel.run(function (context) {
+  return window.Excel.run(function (context) {
     let sheets = context.workbook.worksheets
     sheets.load('items/name')
 
@@ -35,6 +45,11 @@ function getObjects (objects) {
       goodObjects.forEach(o => {
         let convObj = {}
         let vals = worksheetRanges[o.sheet].values
+
+        if (!vals[o.row] || !vals[0]) {
+          return
+        }
+
         for (let i = 0; i < vals[o.row].length; i++) {
           let header = vals[0][i]
           let v = vals[o.row][i]
@@ -66,11 +81,11 @@ function getObjects (objects) {
 module.exports = {
   addSender (args) {
     this.myClients.push(JSON.parse(args))
-    Office.context.document.settings.set('clients', this.myClients)
-    Office.context.document.settings.saveAsync()
+    window.Office.context.document.settings.set('clients', this.myClients)
+    window.Office.context.document.settings.saveAsync()
   },
   getObjectSelection () {
-    return Excel.run(function (context) {
+    return window.Excel.run(function (context) {
       const range = context.workbook.getSelectedRange()
       range.load(['rowIndex', 'rowCount', 'worksheet/name'])
 
@@ -123,8 +138,8 @@ module.exports = {
           objects: objects
         }))
 
-        Office.context.document.settings.set('clients', this.myClients)
-        Office.context.document.settings.saveAsync()
+        window.Office.context.document.settings.set('clients', this.myClients)
+        window.Office.context.document.settings.saveAsync()
       })
   },
   removeSelectionFromSender (args) {
@@ -186,16 +201,22 @@ module.exports = {
         axios.defaults.headers.common[ 'Authorization' ] = client.account.Token
 
         let promises = []
-        // TODO: Do orchestration here
-        promises.push(
-          axios({
-            method: 'POST',
-            baseURL: client.account.RestApi,
-            url: `objects`,
-            data: res
-          })
-            .then(axRes => { return axRes.data.resources })
-        )
+
+        let bucket = []
+        let maxReq = 100 // magic number; maximum objects to send in a bucket
+
+        for (let i = 0; i < res.length; i++) {
+          bucket.push(res[i])
+          if (i % maxReq === 0 && i !== 0) {
+            promises.push(sendObjects(client.account.RestApi, bucket.slice()))
+            bucket = []
+          }
+        }
+
+        if (bucket.length !== 0) {
+          promises.push(sendObjects(client.account.RestApi, bucket.slice()))
+          bucket = []
+        }
 
         return Promise.all(promises)
       })
@@ -220,6 +241,15 @@ module.exports = {
           _id: client._id,
           loading: false,
           loadingBlurb: 'Done.'
+        }))
+      })
+      .catch(err => {
+        window.EventBus.$emit('update-client', JSON.stringify({
+          _id: client._id,
+          loading: false,
+          isLoadingIndeterminate: true,
+          loadingBlurb: `Unable to send stream.`,
+          errors: JSON.stringify(err)
         }))
       })
   }

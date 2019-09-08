@@ -27,7 +27,6 @@
     "@babel/plugin-transform-arrow-functions": "^7.2.0",
     "@babel/plugin-transform-runtime": "^7.5.5",
     "@babel/plugin-transform-shorthand-properties": "^7.2.0",
-    "@babel/plugin-transform-spread": "^7.2.2",
     "@babel/preset-env": "^7.5.5",
     "@vue/babel-helper-vue-jsx-merge-props": "^1.0.0",
     "@vue/babel-plugin-transform-vue-jsx": "^1.0.0",

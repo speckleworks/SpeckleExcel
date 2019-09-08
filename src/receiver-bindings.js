@@ -2,9 +2,6 @@ const axios = require('axios')
 const flatten = require('flat')
 const convertNumToColumnLetter = require('./excel-helpers').convertNumToColumnLetter
 
-const Office = window.Office
-const Excel = window.Excel
-
 function getObjects (baseUrl, objectIds) {
   return new Promise((resolve, reject) => {
     axios({
@@ -75,7 +72,7 @@ function createExcelSheetStream (client, data) {
     loadingBlurb: `Writing sheet...`
   }))
 
-  Excel.run(function (context) {
+  window.Excel.run(function (context) {
     let sheets = context.workbook.worksheets
     sheets.load('items/name')
 
@@ -94,13 +91,15 @@ function createExcelSheetStream (client, data) {
       return context.sync({context: context, sheet: sheet})
     })
     .then(function ({context, sheet}) {
-      let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
-      objectTable.style = 'TableStyleLight8'
-      objectTable.getHeaderRowRange().values = [headers]
+      if (arrayedData.length > 0) {
+        let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
+        objectTable.style = 'TableStyleLight8'
+        objectTable.getHeaderRowRange().values = [headers]
 
-      objectTable.rows.add(null, arrayedData)
+        objectTable.rows.add(null, arrayedData)
+      }
 
-      if (Office.context.requirements.isSetSupported('ExcelApi', '1.2')) {
+      if (window.Office.context.requirements.isSetSupported('ExcelApi', '1.2')) {
         sheet.getUsedRange().format.autofitColumns()
         sheet.getUsedRange().format.autofitRows()
       }
@@ -130,8 +129,8 @@ function createExcelSheetStream (client, data) {
 module.exports = {
   addReceiver (args) {
     this.myClients.push(JSON.parse(args))
-    Office.context.document.settings.set('clients', this.myClients)
-    Office.context.document.settings.saveAsync()
+    window.Office.context.document.settings.set('clients', this.myClients)
+    window.Office.context.document.settings.saveAsync()
   },
   bakeReceiver (args) {
     let client = JSON.parse(args)
@@ -155,27 +154,58 @@ module.exports = {
       url: `streams/${client.streamId}?fields=objects,layers`
     })
       .then(res => {
-        // TODO: Orchestrate this
         let ids = res.data.resource.objects.map(o => o._id)
 
-        return getObjects(client.account.RestApi, ids)
-          .then(res => {
-            window.EventBus.$emit('update-client', JSON.stringify({
-              _id: client._id,
-              loading: true,
-              loadingBlurb: 'Preparing to write sheet...',
-              objects: res
-            }))
+        let promises = []
 
-            createExcelSheetStream(client, res)
+        let bucket = []
+        let maxReq = 50 // magic number; maximum objects to request in a bucket
 
-            this.myClients[index].objects = ids
-            Office.context.document.settings.set('clients', this.myClients)
-            Office.context.document.settings.saveAsync()
+        for (let i = 0; i < ids.length; i++) {
+          bucket.push(ids[i])
+          if (i % maxReq === 0 && i !== 0) {
+            promises.push(getObjects(client.account.RestApi, bucket.slice()))
+            bucket = []
+          }
+        }
+
+        if (bucket.length !== 0) {
+          promises.push(getObjects(client.account.RestApi, bucket.slice()))
+          bucket = []
+        }
+
+        return Promise.all(promises)
+      })
+      .then(res => {
+        let objects = []
+
+        res.forEach(arr => {
+          arr.forEach(o => {
+            objects.push(o)
           })
-          .catch(err => {
-            console.log(err)
-          })
+        })
+
+        window.EventBus.$emit('update-client', JSON.stringify({
+          _id: client._id,
+          loading: true,
+          loadingBlurb: 'Preparing to write sheet...',
+          objects: objects
+        }))
+
+        createExcelSheetStream(client, objects)
+
+        this.myClients[index].objects = objects.map(x => x._id)
+        window.Office.context.document.settings.set('clients', this.myClients)
+        window.Office.context.document.settings.saveAsync()
+      })
+      .catch(err => {
+        window.EventBus.$emit('update-client', JSON.stringify({
+          _id: client._id,
+          loading: false,
+          isLoadingIndeterminate: true,
+          loadingBlurb: `Unable to receive stream.`,
+          errors: JSON.stringify(err)
+        }))
       })
   }
 }

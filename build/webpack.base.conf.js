@@ -2,6 +2,7 @@
 const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
+const babelConfig = require('./babel.config')
 const vueLoaderConfig = require('./vue-loader.conf')
 
 function resolve (dir) {
@@ -47,34 +48,17 @@ module.exports = {
     rules: [
       ...(config.dev.useEslint ? [createLintingRule()] : []),
       {
-        test: /\.vue$/,
-        loader: 'vue-loader',
-        options: vueLoaderConfig
-      },
-      {
         test: /\.js$/,
         use: {
           loader: 'babel-loader',
-          options: {
-            presets: [
-              ["@babel/preset-env", {
-                modules: false,
-                targets: {
-                  browsers: ["> 1%", "last 2 versions", "not ie <= 8"]
-                }
-              }],
-            ],
-            plugins: [
-              "@vue/babel-plugin-transform-vue-jsx",
-              "@babel/plugin-transform-runtime",
-              "@babel/plugin-proposal-object-rest-spread",
-              "@babel/plugin-transform-shorthand-properties",
-              "@babel/plugin-transform-arrow-functions",
-              "@babel/plugin-syntax-dynamic-import",
-            ]
-          }
+          options: babelConfig,
         },
         include: [resolve('SpeckleUiApp/src'), resolve('src'), resolve('node_modules/webpack-dev-server/client')]
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+        options: vueLoaderConfig
       },
       {
         test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,

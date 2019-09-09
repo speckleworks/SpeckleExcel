@@ -1,3 +1,5 @@
+const md5 = require('md5')
+
 const senderBindings = require('./sender-bindings')
 const receiverBindings = require('./receiver-bindings')
 const accountsBindings = require('./accounts-bindings')
@@ -12,13 +14,38 @@ module.exports = Object.assign({},
       return 'Excel'
     },
     getFileName () {
-      return 'MY FILE'
+      return new Promise((resolve, reject) => {
+        window.Office.context.document.getFilePropertiesAsync(null, function (res) {
+          if (res.value === null || res.value === undefined) {
+            return resolve('New Excel File')
+          } else {
+            return resolve(res.value.url.replace(/^.*[\\/]/, '').split('.')[0])
+          }
+        })
+      })
     },
     getDocumentId () {
-      return 'TEST'
+      return new Promise((resolve, reject) => {
+        window.Office.context.document.getFilePropertiesAsync(null, function (res) {
+          if (res.value === null || res.value === undefined) {
+            return resolve(md5('New Excel File'))
+          } else {
+            return resolve(md5(res.value.url))
+          }
+        })
+      })
     },
     getDocumentLocation () {
-      return 'COMP'
+      return new Promise((resolve, reject) => {
+        window.Office.context.document.getFilePropertiesAsync(null, function (res) {
+          if (res.value === null || res.value === undefined) {
+            return resolve('')
+          } else {
+            let fileName = res.value.url.replace(/^.*[\\/]/, '')
+            return resolve(res.value.url.replace(fileName, ''))
+          }
+        })
+      })
     },
     getFileClients () {
       this.myClients = Office.context.document.settings.get('clients')

@@ -16,12 +16,12 @@ SpeckleExcel will be added to the Office AppSource soon. For now, you can sidelo
 
 ## Server requirements
 - SpeckleExcel requires updated Speckle servers (minimum [commit](https://github.com/speckleworks/SpeckleServer/commit/9e135c453a93608a7e75d0317407070a64bdcea7) supported)
-- Please ensure that your Speckle server has the `https://speckleexcel.netlify.com` specified under `REDIRECT_URL` within the `.env` file
+- Please ensure that your Speckle server has `https://excel.speckle.systems` specified under `REDIRECT_URL` within the `.env` file
 
 ## Build Setup
 
 SpeckleExcel contains two Office add-ins to sideload, one for release and one for development:
-- SpeckleExcel: uses `https://speckleexcel.netlify.com` as the plugin source
+- SpeckleExcel: uses `https://excel.speckle.systems` as the plugin source
 - SpeckleExcelDev: uses `https://localhost:8080` as the plugin source
   - Make sure to add the certificate from `https://localhost:8080` before loading the plugin
 

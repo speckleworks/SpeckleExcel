@@ -92,6 +92,7 @@ function getObjects (objects) {
 module.exports = {
   addSender (args) {
     this.myClients.push(JSON.parse(args))
+    this.addSelectionToSender(args)
     window.Office.context.document.settings.set('clients', this.myClients)
     window.Office.context.document.settings.saveAsync()
   },

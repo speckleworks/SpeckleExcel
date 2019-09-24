@@ -70,6 +70,17 @@ function getObjects (objects) {
             convObj.applicationId = 'excel/' + o.sheet + '!' + (o.row).toString()
           }
 
+          if (!Object.keys(convObj).includes('type')) {
+            let typeMatch = Object.keys(convObj).findIndex(x => x.toLowerCase() === 'type')
+            if (typeMatch > -1) {
+              let type = Object.keys(convObj)[typeMatch]
+              convObj.type = convObj[type]
+              delete convObj[type]
+            } else {
+              convObj.type = 'Object'
+            }
+          }
+
           convertedObjects.push(unflatten(convObj, {safe: true}))
         }
       })

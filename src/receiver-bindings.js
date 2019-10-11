@@ -18,8 +18,13 @@ function getObjects (baseUrl, objectIds) {
 function createExcelSheetStream (client, data) {
   let headers = []
   let counter = 1
+
+  let flattenedObjects = []
+
   data.forEach(o => {
     o = flatten(o, {safe: true})
+    flattenedObjects.push(o)
+
     Object.keys(o).forEach(k => {
       headers.push(k)
     })
@@ -39,7 +44,7 @@ function createExcelSheetStream (client, data) {
 
   let arrayedData = []
   counter = 1
-  data.forEach(o => {
+  flattenedObjects.forEach(o => {
     let newObj = []
     headers.forEach(h => {
       if (o.hasOwnProperty(h)) {

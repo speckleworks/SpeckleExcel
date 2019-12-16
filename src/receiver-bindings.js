@@ -16,6 +16,7 @@ function getObjects (baseUrl, objectIds) {
 }
 
 function createExcelSheetStream (client, data) {
+  let errors = []
   let headers = []
   let counter = 1
 
@@ -50,10 +51,18 @@ function createExcelSheetStream (client, data) {
       if (o.hasOwnProperty(h)) {
         let val = JSON.stringify(o[h])
         try {
-          newObj.push(val.replace(/"/g, ''))
+          val = val.replace(/"/g, '')
         } catch (ex) {
-          newObj.push(val)
         }
+        if (val.length > 32767) {
+          errors.push(`Property "${h}" of object ${o['_id']} has too many characters. Result is truncated.`)
+          window.EventBus.$emit('update-client', JSON.stringify({
+            _id: client._id,
+            errors: errors.join('\n')
+          }))
+          val = val.substring(0, 32766)
+        }
+        newObj.push(val)
       } else {
         newObj.push('')
       }
@@ -91,18 +100,65 @@ function createExcelSheetStream (client, data) {
       } else {
         let sheetIndex = sheets.items.findIndex(x => x.name === sheetName)
         sheet = sheets.items[sheetIndex]
-        sheet.getRange().clear()
       }
+      sheet.tables.load('items')
       return context.sync({context: context, sheet: sheet})
     })
     .then(function ({context, sheet}) {
+      let objectTable = null
       if (arrayedData.length > 0) {
-        let objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
-        objectTable.style = 'TableStyleLight8'
-        objectTable.getHeaderRowRange().values = [headers]
+        objectTable = sheet.tables.getItemOrNullObject('SpeckleTable_' + client.streamId)
 
-        objectTable.rows.add(null, arrayedData)
+        if (objectTable === null || sheet.tables.items.length <= 0) {
+          objectTable = sheet.tables.add(`A1:${convertNumToColumnLetter(headers.length)}1`)
+          objectTable.name = 'SpeckleTable_' + client.streamId
+          objectTable.style = 'TableStyleLight8'
+        }
+
+        objectTable.rows.load('items')
+        objectTable.columns.load('items')
       }
+
+      return context.sync({context: context, sheet: sheet, objectTable: objectTable})
+    })
+    .then(function ({context, sheet, objectTable}) {
+      if (objectTable === null) {
+        return context.sync({context: context, sheet: sheet, objectTable: objectTable})
+      }
+
+      objectTable.rows.items.reverse().forEach(r => {
+        r.delete()
+      })
+
+      return context.sync({context: context, sheet: sheet, objectTable: objectTable})
+    })
+    .then(function ({context, sheet, objectTable}) {
+      if (objectTable === null) {
+        return context.sync({context: context, sheet: sheet, objectTable: objectTable})
+      }
+
+      let diffColLength = headers.length - objectTable.columns.items.length
+
+      if (diffColLength > 0) {
+        for (let i = 0; i < diffColLength; i++) {
+          objectTable.columns.add(null, [['HI'], ['']])
+        }
+      } else if (diffColLength < 0) {
+        for (let i = -diffColLength - 1; i >= 0; i--) {
+          objectTable.columns.items[i].delete()
+        }
+      }
+
+      return context.sync({context: context, sheet: sheet, objectTable: objectTable})
+    })
+    .then(function ({context, sheet, objectTable}) {
+      if (objectTable === null) {
+        sheet.activate()
+        return context.sync()
+      }
+
+      objectTable.getHeaderRowRange().values = [headers]
+      objectTable.rows.add(null, arrayedData)
 
       if (window.Office.context.requirements.isSetSupported('ExcelApi', '1.2')) {
         sheet.getUsedRange().format.autofitColumns()
@@ -117,7 +173,8 @@ function createExcelSheetStream (client, data) {
         _id: client._id,
         loading: false,
         isLoadingIndeterminate: true,
-        loadingBlurb: `Done.`
+        loadingBlurb: `Done.`,
+        errors: errors.length === 0 ? null : errors.join('\n')
       }))
     })
     .catch(err => {

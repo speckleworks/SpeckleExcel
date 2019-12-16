@@ -4,7 +4,7 @@ export function convertNumToColumnLetter (num) {
     return ''
   }
 
-  let currentDigit = Math.floor(num / 27)
+  let currentDigit = Math.floor((num - 1) / 26)
 
   if (currentDigit > 0) {
     let remainder = num - currentDigit * 26

@@ -50,10 +50,18 @@ function createExcelSheetStream (client, data) {
       if (o.hasOwnProperty(h)) {
         let val = JSON.stringify(o[h])
         try {
-          newObj.push(val.replace(/"/g, ''))
+          val = val.replace(/"/g, '')
         } catch (ex) {
-          newObj.push(val)
         }
+        if (val.length > 32767) {
+          errors.push(`Property "${h}" of object ${o['_id']} has too many characters. Result is truncated.`)
+          window.EventBus.$emit('update-client', JSON.stringify({
+            _id: client._id,
+            errors: errors.join('\n')
+          }))
+          val = val.substring(0, 32766)
+        }
+        newObj.push(val)
       } else {
         newObj.push('')
       }
